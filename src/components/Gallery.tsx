@@ -1,38 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, X, Play, Image as ImageIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Heart, Lock, Maximize2, Play, X } from 'lucide-react';
 
 export type GalleryItem = {
   url: string;
   name: string;
   type: 'image' | 'video';
-  source: 'local' | 'cloud' | 'blob';
   id: string;
 };
 
-export default function Gallery() {
-  const [items, setItems] = useState<GalleryItem[]>([]);
+type GalleryProps = {
+  items: GalleryItem[];
+  specialItem?: GalleryItem | null;
+};
+
+export default function Gallery({ items, specialItem = null }: GalleryProps) {
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  const fetchItems = async () => {
-    try {
-      const response = await fetch('/api/gallery');
-      const data = await response.json();
-      setItems(data);
-    } catch (error) {
-      console.error("Fetch items error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [passphrase, setPassphrase] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockError, setUnlockError] = useState('');
 
   const container = {
     hidden: { opacity: 0 },
@@ -55,16 +43,137 @@ export default function Gallery() {
     },
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
-      </div>
-    );
-  }
+  const handleUnlock = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (passphrase.trim().toLowerCase() === 'sabeen') {
+      setIsUnlocked(true);
+      setUnlockError('');
+      return;
+    }
+
+    setIsUnlocked(false);
+    setUnlockError('Not the right word.');
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
+      {specialItem ? (
+        <div className="mb-16 rounded-[2rem] border border-accent/15 bg-card/80 p-6 md:p-8 shadow-sm">
+          <div className="flex items-start justify-between gap-6 flex-col md:flex-row">
+            <div className="max-w-2xl">
+              <p className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-accent">
+                <Heart size={12} />
+                Special Section
+              </p>
+              <h3 className="mt-5 text-3xl md:text-4xl font-serif text-foreground">
+                A hidden memory that opens with the right name.
+              </h3>
+              <p className="mt-4 text-accent/70 leading-7">
+                Enter the passphrase to unlock this one special video.
+              </p>
+            </div>
+
+            <form onSubmit={handleUnlock} className="w-full md:max-w-sm space-y-3">
+              <label className="block text-sm font-medium text-foreground/70">
+                Enter the passphrase
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="password"
+                  value={passphrase}
+                  onChange={(e) => {
+                    setPassphrase(e.target.value);
+                    if (unlockError) setUnlockError('');
+                  }}
+                  placeholder="Type here"
+                  className="w-full rounded-2xl border border-accent/20 bg-background px-4 py-3 text-foreground outline-none transition focus:border-accent/40"
+                />
+                <button
+                  type="submit"
+                  className="rounded-2xl bg-foreground px-5 py-3 text-background transition hover:opacity-90"
+                >
+                  Unlock
+                </button>
+              </div>
+              {unlockError ? (
+                <p className="text-sm text-red-500">{unlockError}</p>
+              ) : (
+                <p className="text-xs text-accent/50">Hint: it is a name.</p>
+              )}
+            </form>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {isUnlocked ? (
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                className="mt-8"
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelectedItem(specialItem)}
+                  className="group block w-full overflow-hidden rounded-[2rem] border border-accent/15 bg-background text-left shadow-sm smooth-shadow"
+                >
+                  <div className="grid gap-0 md:grid-cols-[minmax(0,1.1fr)_320px]">
+                    <div className="p-6 md:p-8 flex flex-col justify-center">
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent/60">
+                        Unlocked
+                      </p>
+                      <h4 className="mt-4 text-2xl md:text-3xl font-serif text-foreground">
+                        {specialItem.name}
+                      </h4>
+                      <p className="mt-3 max-w-xl text-accent/70 leading-7">
+                        This one sits apart from the rest. Tap to open the video.
+                      </p>
+                    </div>
+
+                    <div className="relative min-h-[240px] bg-foreground">
+                      <video
+                        src={specialItem.url}
+                        className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:opacity-100"
+                        muted
+                        playsInline
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background/90 text-foreground">
+                          <Play size={24} fill="currentColor" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0.7 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="mt-8 flex min-h-[220px] items-center justify-center rounded-[2rem] border border-dashed border-accent/20 bg-background/60 p-8 text-center"
+              >
+                <div>
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
+                    <Lock size={22} />
+                  </div>
+                  <p className="mt-4 text-lg font-medium text-foreground">Locked for now</p>
+                  <p className="mt-2 text-sm text-accent/60">
+                    Enter the correct word to reveal the special video.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ) : null}
+
+      {items.length === 0 ? (
+        <div className="flex items-center justify-center min-h-[40vh] text-accent/60">
+          No media found in `public/gallery`.
+        </div>
+      ) : null}
+
       <motion.div
         variants={container}
         initial="hidden"

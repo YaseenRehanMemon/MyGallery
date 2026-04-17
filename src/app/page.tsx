@@ -1,15 +1,44 @@
-'use client';
+import fs from 'fs/promises';
+import path from 'path';
+import { Camera } from 'lucide-react';
+import Gallery, { type GalleryItem } from '@/components/Gallery';
 
-import { motion } from 'framer-motion';
-import { Camera, LogOut } from 'lucide-react';
-import Gallery from '@/components/Gallery';
-import UploadButton from '@/components/UploadButton';
+type GalleryData = {
+  regularItems: GalleryItem[];
+  specialItem: GalleryItem | null;
+};
 
-export default function Home() {
-  const handleLogout = async () => {
-    await fetch('/api/auth', { method: 'DELETE' });
-    window.location.href = '/login';
-  };
+async function getGalleryItems(): Promise<GalleryData> {
+  const galleryDir = path.join(process.cwd(), 'public', 'gallery');
+
+  try {
+    const files = await fs.readdir(galleryDir);
+    const items: GalleryItem[] = files
+      .filter((file) => !file.startsWith('.'))
+      .sort((a, b) => b.localeCompare(a))
+      .map((file) => ({
+        url: `/gallery/${file}`,
+        name: file,
+        type: file.toLowerCase().endsWith('.mp4') ? 'video' : 'image',
+        id: file,
+      }));
+
+    const specialItem = items.find((item) => item.name.toLowerCase().includes('tareef')) ?? null;
+
+    return {
+      regularItems: items.filter((item) => item.id !== specialItem?.id),
+      specialItem,
+    };
+  } catch {
+    return {
+      regularItems: [],
+      specialItem: null,
+    };
+  }
+}
+
+export default async function Home() {
+  const { regularItems, specialItem } = await getGalleryItems();
 
   return (
     <main className="min-h-screen relative overflow-hidden bg-background">
@@ -20,59 +49,40 @@ export default function Home() {
       {/* Header */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-background/60 border-b border-accent/5 transition-all duration-300">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
+          <div className="flex items-center gap-3 cursor-pointer group">
             <div className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center transition-transform group-hover:rotate-12">
               <Camera size={20} />
             </div>
             <h1 className="text-2xl font-serif text-foreground font-medium">My Gallery</h1>
-          </motion.div>
-
-          <div className="flex items-center gap-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleLogout}
-              className="p-3 rounded-full hover:bg-accent/10 text-accent transition-colors"
-              title="Logout"
-            >
-              <LogOut size={20} />
-            </motion.button>
           </div>
+
+          <p className="text-sm text-accent/60">Static photo archive</p>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-16 md:py-24 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as any }}
-          className="max-w-2xl mx-auto"
-        >
+        <div className="max-w-2xl mx-auto">
           <span className="inline-block px-4 py-1.5 mb-6 text-xs font-semibold tracking-wider uppercase text-accent/60 bg-accent/5 rounded-full">
             Private Collection
           </span>
           <h2 className="text-4xl md:text-6xl font-serif text-foreground mb-8 leading-[1.1]">
             Captured Moments, <br /> Forever <span className="italic text-accent">Ours</span>.
           </h2>
-          <div className="mt-12 flex justify-center">
-             <UploadButton />
-          </div>
-        </motion.div>
+          <p className="mx-auto max-w-xl text-accent/70 leading-7">
+            Add files to `public/gallery`, push to Git, and Vercel will rebuild the gallery automatically.
+          </p>
+        </div>
       </section>
 
       {/* Gallery Section */}
       <section className="pb-24 relative z-10">
-        <Gallery />
+        <Gallery items={regularItems} specialItem={specialItem} />
       </section>
 
       {/* Footer */}
       <footer className="container mx-auto px-6 py-12 border-t border-accent/5 flex flex-col items-center gap-4 text-accent/40 text-sm font-light">
-         <p>© {new Date().getFullYear()} Private Gallery • Secured with Vercel</p>
+         <p>© {new Date().getFullYear()} Static Gallery • Hosted on Vercel</p>
          <div className="flex gap-4">
             <div className="w-1.5 h-1.5 rounded-full bg-accent/20" />
             <div className="w-1.5 h-1.5 rounded-full bg-accent/20" />
