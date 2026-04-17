@@ -3,18 +3,13 @@ import path from 'path';
 import { Camera } from 'lucide-react';
 import Gallery, { type GalleryItem } from '@/components/Gallery';
 
-type GalleryData = {
-  regularItems: GalleryItem[];
-  specialItem: GalleryItem | null;
-};
-
-async function getGalleryItems(): Promise<GalleryData> {
+async function getGalleryItems(): Promise<GalleryItem[]> {
   const galleryDir = path.join(process.cwd(), 'public', 'gallery');
 
   try {
-    const files = await fs.readdir(galleryDir);
-    const items: GalleryItem[] = files
+    return (await fs.readdir(galleryDir))
       .filter((file) => !file.startsWith('.'))
+      .filter((file) => !file.toLowerCase().includes('tareef'))
       .sort((a, b) => b.localeCompare(a))
       .map((file) => ({
         url: `/gallery/${file}`,
@@ -22,23 +17,13 @@ async function getGalleryItems(): Promise<GalleryData> {
         type: file.toLowerCase().endsWith('.mp4') ? 'video' : 'image',
         id: file,
       }));
-
-    const specialItem = items.find((item) => item.name.toLowerCase().includes('tareef')) ?? null;
-
-    return {
-      regularItems: items.filter((item) => item.id !== specialItem?.id),
-      specialItem,
-    };
   } catch {
-    return {
-      regularItems: [],
-      specialItem: null,
-    };
+    return [];
   }
 }
 
 export default async function Home() {
-  const { regularItems, specialItem } = await getGalleryItems();
+  const items = await getGalleryItems();
 
   return (
     <main className="min-h-screen relative overflow-hidden bg-background">
@@ -77,7 +62,7 @@ export default async function Home() {
 
       {/* Gallery Section */}
       <section className="pb-24 relative z-10">
-        <Gallery items={regularItems} specialItem={specialItem} />
+        <Gallery items={items} />
       </section>
 
       {/* Footer */}
