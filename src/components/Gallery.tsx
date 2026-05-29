@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Maximize2, Play, X } from 'lucide-react';
 
@@ -23,8 +24,8 @@ export default function Gallery({ items }: GalleryProps) {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
+        staggerChildren: 0.03,
+        delayChildren: 0.1,
       },
     },
   };
@@ -50,10 +51,11 @@ export default function Gallery({ items }: GalleryProps) {
       <motion.div
         variants={container}
         initial="hidden"
-        animate="show"
+        whileInView="show"
+        viewport={{ once: true, margin: "-100px" }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
-        {items.map((item) => (
+        {items.map((item, i) => (
           <motion.div
             key={item.id}
             variants={itemAnim}
@@ -80,12 +82,13 @@ export default function Gallery({ items }: GalleryProps) {
                 </div>
               ) : (
                 <div className="relative w-full h-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={item.url}
                     alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    priority={i < 4}
                   />
                   <div className="absolute inset-0 bg-accent-dark/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <Maximize2 className="text-background" size={24} />
@@ -135,11 +138,14 @@ export default function Gallery({ items }: GalleryProps) {
                   className="max-w-full max-h-full rounded-lg shadow-2xl"
                 />
               ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
+                <Image
                   src={selectedItem.url}
                   alt={selectedItem.name}
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                  width={1920}
+                  height={1920}
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl w-auto h-auto"
+                  quality={90}
+                  priority
                 />
               )}
               
