@@ -27,3 +27,6 @@ yarn-error.log*
 
 # Vercel
 .vercel
+
+# Large media files (>100MB, exceeds GitHub limit)
+/public/gallery/VN20260520_005713.mp4

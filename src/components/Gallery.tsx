@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Play, X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 export type GalleryItem = {
   url: string;
@@ -17,117 +17,134 @@ type GalleryProps = {
 };
 
 export default function Gallery({ items }: GalleryProps) {
-  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.03,
-        delayChildren: 0.1,
-      },
-    },
-  };
+  const selectedItem = selectedIndex !== null ? items[selectedIndex] ?? null : null;
 
-  const itemAnim = {
-    hidden: { opacity: 0, scale: 0.9, y: 20 },
-    show: { 
-      opacity: 1, 
-      scale: 1, 
-      y: 0,
-      transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as any }
-    },
-  };
+  const open = useCallback((i: number) => setSelectedIndex(i), []);
+  const close = useCallback(() => setSelectedIndex(null), []);
+  const next = useCallback(() => {
+    setSelectedIndex((p) => (p !== null ? (p + 1) % items.length : null));
+  }, [items.length]);
+  const prev = useCallback(() => {
+    setSelectedIndex((p) =>
+      p !== null ? (p - 1 + items.length) % items.length : null,
+    );
+  }, [items.length]);
+
+  useEffect(() => {
+    if (selectedIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowRight') next();
+      if (e.key === 'ArrowLeft') prev();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedIndex, close, next, prev]);
+
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-32 text-muted text-sm">
+        No media found in{' '}
+        <code className="ml-1 px-1.5 py-0.5 bg-surface rounded text-xs text-accent">public/gallery</code>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      {items.length === 0 ? (
-        <div className="flex items-center justify-center min-h-[40vh] text-accent/60">
-          No media found in `public/gallery`.
-        </div>
-      ) : null}
-
-      <motion.div
-        variants={container}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-100px" }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-      >
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
         {items.map((item, i) => (
-          <motion.div
+          <motion.button
             key={item.id}
-            variants={itemAnim}
-            className="group relative cursor-pointer"
-            onClick={() => setSelectedItem(item)}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: Math.min(i * 0.015, 0.5), ease: [0.16, 1, 0.3, 1] }}
+            onClick={() => open(i)}
+            className="group relative block w-full text-left cursor-pointer rounded-xl overflow-hidden bg-surface border border-border hover:border-accent/30 transition-all duration-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-accent/5 border border-accent/10 shadow-sm smooth-shadow">
+            <div className="aspect-[4/5] relative">
               {item.type === 'video' ? (
-                <div className="relative w-full h-full">
-                  <video 
-                    src={item.url} 
-                    className="w-full h-full object-cover" 
-                    muted 
-                    playsInline
-                  />
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-12 h-12 rounded-full bg-background/90 flex items-center justify-center text-foreground">
-                      <Play size={20} fill="currentColor" />
+                <>
+                  <video src={item.url} className="w-full h-full object-cover" muted playsInline />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/10">
+                      <Play size={18} fill="white" className="text-white ml-0.5" />
                     </div>
                   </div>
-                  <div className="absolute top-4 right-4 text-background/80 bg-black/20 p-1 rounded-md backdrop-blur-md">
-                     <Play size={14} />
-                  </div>
-                </div>
+                </>
               ) : (
-                <div className="relative w-full h-full">
-                  <Image
-                    src={item.url}
-                    alt={item.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    priority={i < 4}
-                  />
-                  <div className="absolute inset-0 bg-accent-dark/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <Maximize2 className="text-background" size={24} />
-                  </div>
-                </div>
+                <Image
+                  src={item.url}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  priority={i < 6}
+                />
               )}
-            </div>
-            
-            <div className="mt-3 px-1">
-               <p className="text-xs font-mono text-accent/40 truncate opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  {item.name}
-               </p>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
 
-      {/* Lightbox / Modal */}
+              {/* Hover reveal */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400">
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <p className="absolute left-3 right-3 bottom-3 text-[11px] text-white/80 truncate translate-y-1 group-hover:translate-y-0 transition-transform duration-300 font-medium">
+                  {item.name}
+                </p>
+              </div>
+
+              {/* Accent line on hover - bottom edge */}
+              <div className="absolute inset-x-3 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Lightbox */}
       <AnimatePresence>
         {selectedItem && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/95 backdrop-blur-xl p-4 md:p-12"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/96 backdrop-blur-md"
+            onClick={close}
           >
             <button
-              onClick={() => setSelectedItem(null)}
-              className="absolute top-6 right-6 text-background/50 hover:text-background p-2 rounded-full hover:bg-white/10 transition-colors z-[60]"
+              onClick={close}
+              className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+              aria-label="Close"
             >
-              <X size={32} />
+              <X size={18} />
             </button>
 
+            {items.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prev(); }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); next(); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+                  aria-label="Next"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
+
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              key={selectedItem.id}
+              initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full h-full flex items-center justify-center"
+              exit={{ scale: 0.96, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
               onClick={(e) => e.stopPropagation()}
             >
               {selectedItem.type === 'video' ? (
@@ -135,7 +152,7 @@ export default function Gallery({ items }: GalleryProps) {
                   src={selectedItem.url}
                   controls
                   autoPlay
-                  className="max-w-full max-h-full rounded-lg shadow-2xl"
+                  className="max-w-full max-h-[85vh] rounded-lg"
                 />
               ) : (
                 <Image
@@ -143,19 +160,25 @@ export default function Gallery({ items }: GalleryProps) {
                   alt={selectedItem.name}
                   width={1920}
                   height={1920}
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl w-auto h-auto"
-                  quality={90}
+                  className="max-w-full max-h-[85vh] object-contain rounded-lg w-auto h-auto"
+                  quality={95}
                   priority
                 />
               )}
-              
-              <div className="absolute bottom-[-40px] left-0 right-0 text-center text-background/60 text-sm font-light">
-                {selectedItem.name}
-              </div>
+
+              {items.length > 1 && (
+                <span className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-sm text-white/40 text-xs font-mono tabular-nums">
+                  {selectedIndex! + 1}/{items.length}
+                </span>
+              )}
             </motion.div>
+
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white/40 text-xs max-w-[80vw] truncate">
+              {selectedItem.name}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

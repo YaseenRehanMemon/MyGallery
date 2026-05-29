@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "My Elegant Gallery",
-  description: "A private place for my memories",
+  title: "My Gallery",
+  description: "A curated collection of captured moments.",
 };
 
 export default function RootLayout({
@@ -23,13 +23,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="darkreader-ignore">
+      <head>
+        <meta name="darkreader-lock" content="true" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="min-h-screen bg-background text-foreground transition-colors duration-500">
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );

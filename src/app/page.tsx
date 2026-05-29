@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Camera } from 'lucide-react';
 import Gallery, { type GalleryItem } from '@/components/Gallery';
 
 async function getGalleryItems(): Promise<GalleryItem[]> {
@@ -26,53 +25,40 @@ export default async function Home() {
   const items = await getGalleryItems();
 
   return (
-    <main className="min-h-screen relative overflow-hidden bg-background">
-      {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-accent-light/10 rounded-full blur-[80px] pointer-events-none" />
+    <main className="min-h-screen bg-bg">
+      {/* Ambient glow */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-accent/6 rounded-full blur-[150px] pointer-events-none" />
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-background/60 border-b border-accent/5 transition-all duration-300">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center transition-transform group-hover:rotate-12">
-              <Camera size={20} />
+      <header className="sticky top-0 z-40 bg-bg/70 backdrop-blur-xl border-b border-border">
+        <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
             </div>
-            <h1 className="text-2xl font-serif text-foreground font-medium">My Gallery</h1>
+            <span className="text-sm font-medium tracking-tight text-foreground">Gallery</span>
           </div>
-
-          <p className="text-sm text-accent/60">Static photo archive</p>
+          <span className="text-xs text-muted font-mono">{items.length} items</span>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-6 py-16 md:py-24 text-center">
-        <div className="max-w-2xl mx-auto">
-          <span className="inline-block px-4 py-1.5 mb-6 text-xs font-semibold tracking-wider uppercase text-accent/60 bg-accent/5 rounded-full">
+      <div className="max-w-[1600px] mx-auto px-6 pt-14 pb-6">
+        <div className="mb-12">
+          <span className="inline-block text-[11px] tracking-[0.2em] uppercase text-accent font-medium mb-4">
             Private Collection
           </span>
-          <h2 className="text-4xl md:text-6xl font-serif text-foreground mb-8 leading-[1.1]">
-            Captured Moments, <br /> Forever <span className="italic text-accent">Ours</span>.
-          </h2>
-          <p className="mx-auto max-w-xl text-accent/70 leading-7">
-            Add files to `public/gallery`, push to Git, and Vercel will rebuild the gallery automatically.
-          </p>
+          <h1 className="text-3xl font-medium text-foreground tracking-tight">
+            Captured moments
+          </h1>
         </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section className="pb-24 relative z-10">
         <Gallery items={items} />
-      </section>
+      </div>
 
-      {/* Footer */}
-      <footer className="container mx-auto px-6 py-12 border-t border-accent/5 flex flex-col items-center gap-4 text-accent/40 text-sm font-light">
-         <p>© {new Date().getFullYear()} Static Gallery • Hosted on Vercel</p>
-         <div className="flex gap-4">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent/20" />
-            <div className="w-1.5 h-1.5 rounded-full bg-accent/20" />
-            <div className="w-1.5 h-1.5 rounded-full bg-accent/20" />
-         </div>
+      <footer className="max-w-[1600px] mx-auto px-6 py-10 border-t border-border flex justify-between text-xs text-muted">
+        <span>&copy; {new Date().getFullYear()}</span>
+        <span>Hosted on Vercel</span>
       </footer>
     </main>
   );
